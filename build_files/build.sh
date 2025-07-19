@@ -1,6 +1,14 @@
 #!/bin/bash
 
+RELEASE="$(rpm -E %fedora)"
 set -ouex pipefail
+
+enable_copr() {
+    repo="$1"
+    repo_with_dash="${repo/\//-}"
+    wget "https://copr.fedorainfracloud.org/coprs/${repo}/repo/fedora-${RELEASE}/${repo_with_dash}-fedora-${RELEASE}.repo" \
+        -O "/etc/yum.repos.d/_copr_${repo_with_dash}.repo"
+}
 
 ### Install packages
 
@@ -9,16 +17,66 @@ set -ouex pipefail
 # List of rpmfusion packages can be found here:
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/39/x86_64/repoview/index.html&protocol=https&redirect=1
 
-# this installs a package from fedora repos
-dnf5 install -y tmux 
+enable_copr solopasha/hyprland
+enable_copr erikreider/SwayNotificationCenter
+enable_copr pgdev/ghostty
+enable_copr wezfurlong/wezterm-nightly
 
-# Use a COPR Example:
-#
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
+# ncurses-term dependency is in conflict with ghostty so I'm getting rid of fish here
+dnf5 remove -y fish
+
+dnf5 install -y --setopt=install_weak_deps=False \
+    xdg-desktop-portal-hyprland \
+    hyprland \
+    hyprlock \
+    hypridle \
+    hyprpicker \
+    hyprsysteminfo \
+    hyprsunset \
+    hyprpaper \
+    hyprcursor \
+    hyprgraphics \
+    hyprpolkitagent \
+    hyprland-qtutils \
+    hyprland-qt-support \
+    hyprland-uwsm \
+    uwsm \
+    pyprland \
+    waybar \
+    wofi \
+    rofi \
+    swaync \
+    wl-clipboard \
+    grim \
+    brightnessctl \
+    pavucontrol \
+    network-manager-applet \
+    clipman \
+    nwg-drawer \
+    wdisplays \
+    pavucontrol \
+    SwayNotificationCenter \
+    NetworkManager-tui \
+    tmux \
+    ghostty \
+    wezterm \
+    blueman \
+    qt5-qtwayland \
+    qt6-qtwayland \
+    sddm
+
 # Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
+# dnf5 -y copr disable solopasha/hyprland
+# dnf5 -y copr disable erikreider/SwayNotificationCenter
+# dnf5 -y copr disable pgdev/ghostty
 
 #### Example for enabling a System Unit File
 
+# experimenting to get hyprlock to work
+# echo "auth required pam_unix.so" >/etc/pam.d/hyprlock
+# echo "auth include system-auth" >/etc/pam.d/hyprlock
 systemctl enable podman.socket
+systemctl disable gdm
+systemctl enable sddm
+
+mkdir -p /nix/var/nix/gcroots/per-user/bazzite
